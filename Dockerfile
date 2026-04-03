@@ -1,5 +1,9 @@
 FROM python:3.13-slim
 
-COPY entrypoint.sh /entrypoint.sh
+WORKDIR /app
 
-ENTRYPOINT ["/entrypoint.sh"]
+COPY . /app/
+
+RUN pip install requests
+
+ENTRYPOINT ["/app/entrypoint.sh"]
