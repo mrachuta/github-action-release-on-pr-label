@@ -42,7 +42,7 @@ jobs:
           repository: ${{ github.repository }}
           pull_request_id: ${{ github.event.pull_request.number || github.event.issue.number }}
           mode: validate
-          debug: ${{ runner.debug == '1' && '--debug' || '' }}
+          debug: ${{ runner.debug }}
 
   create-release:
     if: |
@@ -64,4 +64,4 @@ jobs:
           repository: ${{ github.repository }}
           pull_request_id: ${{ github.event.pull_request.number }}
           mode: release
-          debug: ${{ runner.debug == '1' && '--debug' || '' }}
+          debug: ${{ runner.debug }}
