@@ -3,9 +3,13 @@ run-name: Release job triggered by ${{ github.event_name }} on ${{ github.ref_na
 
 on:
   pull_request:
+    branches: [master]
+    types: [opened, labeled, unlabeled, closed]
 
 jobs:
-  release:
+  validate-for-release:
+    if: |
+      github.event.action == 'opened' || github.event.action == 'labeled' || github.event.action == 'unlabeled'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -16,8 +20,28 @@ jobs:
         id: checkout
       - name: Validate for release
         uses: ./
-        id: validate
+        id: validate_for_release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           pull_request_id: ${{ github.event.number }}
           mode: comment
+
+  create-release:
+    if: |
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        id: checkout
+      - name: Create release
+        uses: ./
+        id: create_release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull_request_id: ${{ github.event.number }}
+          mode: release
