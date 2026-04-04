@@ -1,6 +1,7 @@
 name: Release build
 run-name: >
-  Release job triggered by ${{ github.event_name }} on ${{ github.event.pull_request.number || }}/merge
+  Release job triggered by ${{ case(github.event_name == 'pull_request', 'change', 'comment') }} 
+  on pull request #${{ github.event.pull_request.number || github.event.issue.number }}
 
 on:
   pull_request:
