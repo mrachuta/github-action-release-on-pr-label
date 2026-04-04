@@ -23,11 +23,6 @@ def test_calculate_version_major(patch_release):
     patch_release.calculate_version()
     assert patch_release.new_tag == "v2.0.0"
 
-def test_calculate_version_first(patch_release):
-    patch_release.release_type = "first"
-    patch_release.calculate_version()
-    assert patch_release.new_tag == "v1.0.0"
-
 def test_calculate_version_invalid_tag(patch_release):
     patch_release.latest_tag = "invalid"
     patch_release.release_type = "patch"

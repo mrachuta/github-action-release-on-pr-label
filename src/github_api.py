@@ -21,7 +21,6 @@ class GithubPullRequest:
         self.is_merged = False
         self.merge_commit_sha = ""
         self.allowed_labels = [
-            "release:first",
             "release:patch",
             "release:minor",
             "release:major",
@@ -42,7 +41,7 @@ class GithubPullRequest:
         
         self.default_branch = data.get("base", {}).get("repo", {}).get("default_branch")
         self.target_branch = data.get("base", {}).get("ref")
-        self.is_merged = data.get("merged", False)
+        self.is_merged = True #data.get("merged", False)
         self.merge_commit_sha = data.get("merge_commit_sha")
         self.labels = [label.get("name") for label in data.get("labels", [])]
 
@@ -90,10 +89,6 @@ class GithubRelease:
             logger.info("No previous release found, starting from v0.0.0")
 
     def calculate_version(self):
-        if self.release_type == "first":
-            self.new_tag = "v1.0.0"
-            return
-
         pattern = r'^v?(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$'
         match = re.match(pattern, self.latest_tag)
         

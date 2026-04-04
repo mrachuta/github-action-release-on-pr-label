@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY . /app/
 
-RUN pip install requests
+RUN python3 -m pip install "requests==2.*"
 
 ENTRYPOINT ["/app/entrypoint.sh"]
