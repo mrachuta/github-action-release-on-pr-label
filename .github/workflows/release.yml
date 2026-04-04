@@ -37,7 +37,7 @@ jobs:
         id: validate_for_release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          pull_request_id: ${{ case(github.event_name, 'pull_request', github.event.pull_request.number, github.event.issue.number) }}
+          pull_request_id: ${{ case(github.event_name == 'pull_request', github.event.pull_request.number, github.event.issue.number) }}
           mode: validate
 
   create-release:
