@@ -1,4 +1,3 @@
-import os
 import argparse
 import logging
 from .github_api import GithubPullRequest, GithubRelease

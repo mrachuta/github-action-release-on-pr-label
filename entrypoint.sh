@@ -6,7 +6,7 @@ input_pull_request_id=$3
 input_mode=$4
 debug=""
 
-if [[ "$ACTIONS_STEP_DEBUG" == "true" ]]; then
+if [[ "$5" == "true" || "$5" == "TRUE" || "$5" == "True" ]]; then
   debug="--debug"
 fi
 
