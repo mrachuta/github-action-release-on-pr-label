@@ -9,6 +9,10 @@ inputs:
     description: "GitHub access token"
     required: true
     type: string
+  repository:
+    description: "GitHub repostitory name"
+    required: true
+    type: string
   pull_request_id:
     description: "Pull request to use in release process"
     required: true
@@ -23,5 +27,6 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.token }}
+    - ${{ inputs.repository }}
     - ${{ inputs.pull_request_id }}
     - ${{ inputs.mode }}

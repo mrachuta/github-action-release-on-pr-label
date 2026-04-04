@@ -3,9 +3,16 @@ import argparse
 import logging
 from .github_api import GithubPullRequest, GithubRelease
 
+
 def run():
     parser = argparse.ArgumentParser(description="GitHub Release on PR Label")
     parser.add_argument("-t", "--token", required=True, help="GitHub Token")
+    parser.add_argument(
+        "-r",
+        "--repository",
+        required=True,
+        help="GitHub Repository",
+    )
     parser.add_argument(
         "-p", "--pull-request-id", required=True, type=int, help="PR ID"
     )
@@ -15,12 +22,6 @@ def run():
         choices=["validate", "release"],
         default="validate",
         help="Execution mode",
-    )
-    parser.add_argument(
-        "-r",
-        "--repository",
-        default=os.getenv("GITHUB_REPOSITORY"),
-        help="GitHub Repository",
     )
     parser.add_argument("-d", "--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
