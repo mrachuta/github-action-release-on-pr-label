@@ -1,8 +1,6 @@
 name: Release build
 run-name: >
-  Release job triggered by 
-  ${{ github.event_name }} on 
-  ${{ github.event.pull_request.number || format('{0}/merge', github.event.issue.number) }}
+  Release job triggered by ${{ github.event_name }} on ${{ github.event.pull_request.number || }}/merge
 
 on:
   pull_request:
@@ -32,13 +30,6 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - name: Debug event payload
-        run: |
-          echo "event name: ${{ github.event_name }}"
-          echo "pull_request.number: ${{ github.event.pull_request.number }}"
-          echo "issue.number: ${{ github.event.issue.number }}"
-          echo "issue.pull_request exists: ${{ github.event.issue.pull_request }}"
-        id: debug
       - name: Checkout
         uses: actions/checkout@v5
         id: checkout
