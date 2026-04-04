@@ -9,6 +9,10 @@ inputs:
     description: "GitHub access token"
     required: true
     type: string
+  repository:
+    description: "GitHub repostitory name"
+    required: true
+    type: string
   pull_request_id:
     description: "Pull request to use in release process"
     required: true
@@ -17,11 +21,17 @@ inputs:
     description: "Mode that action will be using"
     required: false
     type: string
+  debug:
+    description: "Enable debug logging"
+    required: false
+    type: string
 
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
     - ${{ inputs.token }}
+    - ${{ inputs.repository }}
     - ${{ inputs.pull_request_id }}
     - ${{ inputs.mode }}
+    - ${{ inputs.debug }}

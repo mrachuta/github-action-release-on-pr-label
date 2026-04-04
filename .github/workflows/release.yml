@@ -39,8 +39,10 @@ jobs:
         id: validate_for_release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
           pull_request_id: ${{ github.event.pull_request.number || github.event.issue.number }}
           mode: validate
+          debug: ${{ runner.debug }}
 
   create-release:
     if: |
@@ -59,5 +61,7 @@ jobs:
         id: create_release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
           pull_request_id: ${{ github.event.pull_request.number }}
           mode: release
+          debug: ${{ runner.debug }}

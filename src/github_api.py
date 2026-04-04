@@ -57,7 +57,7 @@ class GithubPullRequest:
             self.labels_assessment = True
             label = found_labels[0]
             self.release_type = label.split(":")[1]
-            self.assessment_results["labels"] = f"Found exactly one release label: {label}."
+            self.assessment_results["labels"] = f"Found exactly one release label: *{label}*."
         else:
             self.assessment_results["labels"] = f"Found {len(found_labels)} release labels (expected 1)."
 
