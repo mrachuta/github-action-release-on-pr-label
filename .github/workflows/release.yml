@@ -5,11 +5,14 @@ on:
   pull_request:
     branches: [master]
     types: [opened, labeled, unlabeled, closed]
+  issue_comment:
+    types: [created]
 
 jobs:
   validate-for-release:
     if: |
-      github.event.action == 'opened' || github.event.action == 'labeled' || github.event.action == 'unlabeled'
+      (github_event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'labeled' || github.event.action == 'unlabeled')) ||
+      (github_event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/valiate-for-release'))
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -24,7 +27,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           pull_request_id: ${{ github.event.number }}
-          mode: comment
+          mode: validate
 
   create-release:
     if: |
