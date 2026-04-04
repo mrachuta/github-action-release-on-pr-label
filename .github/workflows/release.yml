@@ -1,0 +1,17 @@
+name: Release build
+run-name: Release job triggered by ${{ github.event_name }} on ${{ github.ref_name }}
+
+on:
+  pull_request:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate for release
+        uses: ./
+        id: validate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull_request_id: ${{ github.event.number }}
+          mode: comment
