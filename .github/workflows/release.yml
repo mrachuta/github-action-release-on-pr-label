@@ -47,8 +47,7 @@ jobs:
       github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
-      contents: read
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
