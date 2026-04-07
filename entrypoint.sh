@@ -10,4 +10,4 @@ if [[ "$5" == "true" || "$5" == "TRUE" || "$5" == "True" || "$5" == "1" ]]; then
   debug="--debug"
 fi
 
-python3 roprl.py --token "$input_token" --repository "$input_repository" --pull-request-id "$input_pull_request_id" --mode "$input_mode" $debug
+python3 /app/roprl.py --token "$input_token" --repository "$input_repository" --pull-request-id "$input_pull_request_id" --mode "$input_mode" $debug
