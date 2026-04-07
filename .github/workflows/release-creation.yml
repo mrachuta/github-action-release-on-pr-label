@@ -1,4 +1,4 @@
-name: Release build
+name: Release creation build
 run-name: >
   Release job triggered by ${{ case(github.event_name == 'pull_request', 'change', 'comment') }} 
   on pull request #${{ github.event.pull_request.number || github.event.issue.number }}
@@ -9,6 +9,15 @@ on:
     types: [opened, labeled, unlabeled, closed]
   issue_comment:
     types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+  contents: write
+  statuses: write
 
 jobs:
   validate-for-release:
@@ -27,12 +36,9 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         id: checkout
       - name: Validate for release
         uses: ./
@@ -54,7 +60,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         id: checkout
       - name: Create release
         uses: ./
