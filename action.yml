@@ -25,7 +25,6 @@ inputs:
     description: "Enable debug logging"
     required: false
     type: string
-
 runs:
   using: 'docker'
   image: 'Dockerfile'

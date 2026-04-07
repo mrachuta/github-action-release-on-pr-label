@@ -1,11 +1,14 @@
 import re
+import os
 import requests
 import logging
 
 GITHUB_API_URL = "https://api.github.com"
+# TODO: Update API version
 GITHUB_API_VERSION = "2022-11-28"
 
 logger = logging.getLogger(__name__)
+
 
 class GithubPullRequest:
     def __init__(self, repository, token, pull_request_id):
@@ -20,6 +23,7 @@ class GithubPullRequest:
         self.target_branch = ""
         self.is_merged = False
         self.merge_commit_sha = ""
+        self.head_sha = ""
         self.allowed_labels = [
             "release:patch",
             "release:minor",
@@ -38,11 +42,12 @@ class GithubPullRequest:
         response = requests.get(url, headers=self.headers)
         response.raise_for_status()
         data = response.json()
-        
+
         self.default_branch = data.get("base", {}).get("repo", {}).get("default_branch")
         self.target_branch = data.get("base", {}).get("ref")
-        self.is_merged = True #data.get("merged", False)
+        self.is_merged = data.get("merged", False)
         self.merge_commit_sha = data.get("merge_commit_sha")
+        self.head_sha = data.get("head", {}).get("sha")
         self.labels = [label.get("name") for label in data.get("labels", [])]
 
     def assess_for_release(self):
@@ -50,22 +55,49 @@ class GithubPullRequest:
             self.branch_assessment = True
             self.assessment_results["branch"] = "Target branch matches default branch."
         else:
-            self.assessment_results["branch"] = f"Target branch ({self.target_branch}) != default ({self.default_branch})."
+            self.assessment_results[
+                "branch"
+            ] = f"Target branch ({self.target_branch}) != default ({self.default_branch})."
 
         found_labels = list(set(self.allowed_labels) & set(self.labels))
         if len(found_labels) == 1:
             self.labels_assessment = True
             label = found_labels[0]
             self.release_type = label.split(":")[1]
-            self.assessment_results["labels"] = f"Found exactly one release label: *{label}*."
+            self.assessment_results[
+                "labels"
+            ] = f"Found exactly one release label: *{label}*."
         else:
-            self.assessment_results["labels"] = f"Found {len(found_labels)} release labels (expected 1)."
+            self.assessment_results[
+                "labels"
+            ] = f"Found {len(found_labels)} release labels (expected 1)."
 
         self.release_eligible = self.branch_assessment and self.labels_assessment
 
     def add_comment(self, comment):
         url = f"{GITHUB_API_URL}/repos/{self.repository}/issues/{self.pull_request_id}/comments"
         requests.post(url, headers=self.headers, json={"body": comment}).raise_for_status()
+
+    def set_commit_status(self, state, description, context="Release Eligibility"):
+        if not self.head_sha:
+            logger.warning("No head_sha found, cannot set commit status.")
+            return
+
+        url = f"{GITHUB_API_URL}/repos/{self.repository}/statuses/{self.head_sha}"
+        
+        target_url = None
+        run_id = os.environ.get("GITHUB_RUN_ID")
+        if run_id:
+            server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+            target_url = f"{server_url}/{self.repository}/actions/runs/{run_id}"
+
+        payload = {
+            "state": state,
+            "description": description,
+            "context": context,
+            "target_url": target_url
+        }
+        requests.post(url, headers=self.headers, json=payload).raise_for_status()
 
 
 class GithubRelease:
@@ -89,12 +121,14 @@ class GithubRelease:
             logger.info("No previous release found, starting from v0.0.0")
 
     def calculate_version(self):
-        pattern = r'^v?(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$'
+        pattern = r"^v?(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$"
         match = re.match(pattern, self.latest_tag)
-        
+
         if not match:
-            self.new_tag = "v0.1.0"
-            return
+            logger.error(
+                f"Latest tag {self.latest_tag} does not match semantic versioning."
+            )
+            return False
 
         major, minor, patch = map(int, match.groups())
 
@@ -105,6 +139,8 @@ class GithubRelease:
         elif self.release_type == "patch":
             self.new_tag = f"v{major}.{minor}.{patch + 1}"
 
+        return True
+
     def create_release(self, tag_name, commit_sha):
         url = f"{GITHUB_API_URL}/repos/{self.repository}/releases"
         payload = {
@@ -112,7 +148,7 @@ class GithubRelease:
             "target_commitish": commit_sha,
             "name": tag_name,
             "body": f"Automated release {tag_name}",
-            "generate_release_notes": True
+            "generate_release_notes": True,
         }
         response = requests.post(url, headers=self.headers, json=payload)
         response.raise_for_status()
