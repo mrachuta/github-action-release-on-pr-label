@@ -1,7 +1,6 @@
 import re
 import requests
 import logging
-import os
 
 GITHUB_API_URL = "https://api.github.com"
 # TODO: Update API version
@@ -78,13 +77,10 @@ class GithubPullRequest:
         url = f"{GITHUB_API_URL}/repos/{self.repository}/issues/{self.pull_request_id}/comments"
         requests.post(url, headers=self.headers, json={"body": comment}).raise_for_status()
 
-    def set_commit_status(self, state, description, context=None):
+    def set_commit_status(self, state, description, context="Release Eligibility"):
         if not self.head_sha:
             logger.warning("No head_sha found, cannot set commit status.")
             return
-
-        if not context:
-            context = os.environ.get("GITHUB_JOB", "Release Check")
 
         url = f"{GITHUB_API_URL}/repos/{self.repository}/statuses/{self.head_sha}"
         payload = {"state": state, "description": description, "context": context}
