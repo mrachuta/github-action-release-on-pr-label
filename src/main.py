@@ -35,7 +35,13 @@ def run():
     # 2. Prepare Version
     release = GithubRelease(args.repository, args.token, pr.release_type)
     release.get_latest_release()
-    release.calculate_version()
+    version_valid = release.calculate_version()
+
+    if not version_valid:
+        pr.release_eligible = False
+        pr.assessment_results["versioning"] = f"Previous release tag `{release.latest_tag}` does not match semantic versioning."
+    else:
+        pr.assessment_results["versioning"] = f"Next tag: `{release.new_tag}` ({pr.release_type})"
 
     # 3. Handle Modes
     if args.mode == "validate":
@@ -44,9 +50,9 @@ def run():
             f"### Release Eligibility Summary {status_icon}\n"
             f"- **Branch Check**: {pr.assessment_results['branch']}\n"
             f"- **Labels Check**: {pr.assessment_results['labels']}\n"
+            f"- **Versioning Check**: {pr.assessment_results['versioning']}\n"
         )
         if pr.release_eligible:
-            summary += f"- **Proposed Tag**: `{release.new_tag}` ({pr.release_type})\n"
             summary += f"  - WARNING: This tag is calculated based on the latest release and PR changes. Please verify before merging!\n"
             summary += f"    You can use `/validate-for-release` command via PR comment to trigger a re-assessment.\n"
 

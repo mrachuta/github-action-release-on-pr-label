@@ -3,6 +3,7 @@ import requests
 import logging
 
 GITHUB_API_URL = "https://api.github.com"
+# TODO: Update API version
 GITHUB_API_VERSION = "2022-11-28"
 
 logger = logging.getLogger(__name__)
@@ -93,8 +94,8 @@ class GithubRelease:
         match = re.match(pattern, self.latest_tag)
         
         if not match:
-            self.new_tag = "v0.1.0"
-            return
+            logger.error(f"Latest tag {self.latest_tag} does not match semantic versioning.")
+            return False
 
         major, minor, patch = map(int, match.groups())
 
@@ -104,6 +105,8 @@ class GithubRelease:
             self.new_tag = f"v{major}.{minor + 1}.0"
         elif self.release_type == "patch":
             self.new_tag = f"v{major}.{minor}.{patch + 1}"
+
+        return True
 
     def create_release(self, tag_name, commit_sha):
         url = f"{GITHUB_API_URL}/repos/{self.repository}/releases"
