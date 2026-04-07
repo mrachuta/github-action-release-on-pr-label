@@ -1,4 +1,5 @@
 import re
+import os
 import requests
 import logging
 
@@ -83,7 +84,19 @@ class GithubPullRequest:
             return
 
         url = f"{GITHUB_API_URL}/repos/{self.repository}/statuses/{self.head_sha}"
-        payload = {"state": state, "description": description, "context": context}
+        
+        target_url = None
+        run_id = os.environ.get("GITHUB_RUN_ID")
+        if run_id:
+            server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+            target_url = f"{server_url}/{self.repository}/actions/runs/{run_id}"
+
+        payload = {
+            "state": state,
+            "description": description,
+            "context": context,
+            "target_url": target_url
+        }
         requests.post(url, headers=self.headers, json=payload).raise_for_status()
 
 
