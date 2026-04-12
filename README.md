@@ -9,8 +9,11 @@ Release on PR Label GitHub Action - a GitHub action to create releases based on 
 - [Technologies](#technologies)
 - [Setup](#setup)
   - [Inputs](#inputs)
+  - [Outputs](#outputs)
   - [Local Testing](#local-testing)
   - [Example Workflow](#example-workflow)
+    - [Release validation and creation - simple usage](#release-validation-and-creation---simple-usage)
+    - [Release validation and creation - more complex usage](#release-validation-and-creation---more-complex-usage)
 - [Usage](#usage)
   - [Labels](#labels)
   - [Example flow](#example-flow)
@@ -25,9 +28,9 @@ This GitHub Action automates the creation of releases based on pull request labe
 ### Features
 
 - **Validation**: Checks if the target branch matches the default branch.
-- **Versioning**: Calculates the new version based on labels (`release:major`, `release:minor`, `release:patch`).
+- **Versioning**: Calculates the new version based on labels (`release:major`, `release:minor`, `release:patch`) or accepts a custom tag.
 - **Modes**:
-  - `comment`: Analyzes the PR and posts a summary comment about release eligibility.
+  - `validate`: Analyzes the PR, posts a summary comment about release eligibility, and outputs the calculated tag.
   - `release`: Creates a GitHub release/tag if the PR is merged and eligible.
 - **Automated Notes**: Generates release notes automatically via GitHub's API.
 
@@ -40,13 +43,20 @@ This GitHub Action automates the creation of releases based on pull request labe
 
 ### Inputs
 
-| Input             | Description                                          | Required | Default   |
-|-------------------|------------------------------------------------------|----------|-----------|
-| `token`           | GitHub access token (usually `secrets.GITHUB_TOKEN`) | Yes      | N/A       |
-| `repository`      | The full repository name (e.g., `owner/repo`)        | Yes      | N/A       |
-| `pull_request_id` | The ID of the pull request to process                | Yes      | N/A       |
-| `mode`            | Execution mode: `comment` or `release`               | No       | `comment` |
-| `debug`           | Enable debug logging via flag `--debug`              | No       | ``        |
+| Input             | Description                                          | Required | Default |
+|-------------------|------------------------------------------------------|----------|---------|
+| `token`           | GitHub access token (usually `secrets.GITHUB_TOKEN`) | Yes      | N/A     |
+| `repository`      | The full repository name (e.g., `owner/repo`)        | Yes      | N/A     |
+| `pull_request_id` | The ID of the pull request to process                | Yes      | N/A     |
+| `mode`            | Execution mode: `validate` or `release`              | Yes      | N/A     |
+| `debug`           | Enable debug logging via flag `--debug`              | No       | ``      |
+| `custom_tag`      | Custom tag to use in release mode (skips calculation)| No       | ``      |
+
+### Outputs
+
+| Output            | Description          |
+|------------------ |----------------------|
+| `new_tag`         | The proposed new tag |
 
 ### Local Testing
 
@@ -59,6 +69,8 @@ python3 release-on-pr-label.py --token YOUR_TOKEN --repository owner/repo --pull
 ```
 
 ### Example Workflow
+
+#### Release validation and creation - simple usage
 
 Create a file named `.github/workflows/release-creation.yml` in your repository:
 
@@ -101,6 +113,8 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.validate_for_release.outputs.new_tag }}
     steps:
       - name: Validate for release
         uses: mrachuta/github-action-release-on-pr-label@master
@@ -113,6 +127,7 @@ jobs:
           debug: ${{ runner.debug }}
 
   create-release:
+    needs: validate-for-release
     if: |
       github.event_name == 'pull_request' && 
       github.event.action == 'closed' && 
@@ -127,6 +142,77 @@ jobs:
           repository: ${{ github.repository }}
           pull_request_id: ${{ github.event.pull_request.number }}
           mode: release
+          custom_tag: ${{ needs.validate-for-release.outputs.new_tag }}
+          debug: ${{ runner.debug }}
+
+```
+#### Release validation and creation - more complex usage
+
+Create a file named `.github/workflows/cd.yml` in your repository:
+
+```yaml
+name: Continuous Delivery build
+run-name: >
+  Release job triggered by ${{ github.event_name }} 
+  on pull request #${{ github.event.pull_request.number }}
+
+on:
+  pull_request:
+    branches: 
+      - master
+    types: 
+      - closed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+  contents: write
+  statuses: write
+
+jobs:
+  validate-for-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate for release
+        uses: mrachuta/github-action-release-on-pr-label@master
+        id: validate_for_release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          pull_request_id: ${{ github.event.pull_request.number }}
+          mode: validate
+          debug: ${{ runner.debug }}
+    outputs:
+      new_tag: ${{ steps.validate_for_release.outputs.new_tag }}
+
+  do-something-with-tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: 
+      - validate-for-release
+    steps:
+      - name: Print info
+        run: "tar -cvf my-app-${{ needs.validate-for-release.outputs.new_tag }}.tar my-app"
+
+  create-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: 
+      - validate-for-release
+    steps:
+      - name: Create release
+        uses: mrachuta/github-action-release-on-pr-label@master
+        id: create_release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          pull_request_id: ${{ github.event.pull_request.number }}
+          mode: release
+          custom_tag: ${{ needs.validate-for-release.outputs.new_tag }}
           debug: ${{ runner.debug }}
 
 ```
