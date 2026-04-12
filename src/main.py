@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import glob
 from .github_api import GithubPullRequest, GithubRelease
 
 
@@ -23,6 +24,9 @@ def run():
     )
     parser.add_argument(
         "-c", "--custom-tag", help="Custom tag to use in release mode"
+    )
+    parser.add_argument(
+        "-a", "--assets", help="Comma-separated list of assets to upload"
     )
     parser.add_argument("-d", "--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
@@ -89,9 +93,19 @@ def run():
         if pr.release_eligible and pr.is_merged:
             logger.info(f"Creating release {release.new_tag}...")
             try:
-                release.create_release(
+                release_data = release.create_release(
                     tag_name=release.new_tag, commit_sha=pr.merge_commit_sha
                 )
+
+                if args.assets:
+                    upload_url = release_data.get("upload_url")
+                    asset_patterns = [a.strip() for a in args.assets.split(",")]
+                    for pattern in asset_patterns:
+                        for file_path in glob.glob(pattern):
+                            if os.path.isfile(file_path):
+                                logger.info(f"Uploading asset {file_path}...")
+                                release.upload_asset(upload_url, file_path)
+
                 pr.set_commit_status("success", "Release created successfully")
                 logger.info("Release created successfully.")
             except Exception as e:
