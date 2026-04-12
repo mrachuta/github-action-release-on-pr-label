@@ -1,13 +1,27 @@
 #!/usr/bin/env bash
 
-input_token=$1
-input_repository=$2
-input_pull_request_id=$3
-input_mode=$4
-debug=""
+# GitHub Actions provides all inputs as environment variables with the INPUT_ prefix.
+# These names are uppercase by default.
+token="${INPUT_TOKEN}"
+repository="${INPUT_REPOSITORY}"
+pull_request_id="${INPUT_PULL_REQUEST_ID}"
+mode="${INPUT_MODE}"
+custom_tag="${INPUT_CUSTOM_TAG}"
+debug="${INPUT_DEBUG}"
 
-if [[ "$5" == "true" || "$5" == "TRUE" || "$5" == "True" || "$5" == "1" ]]; then
-  debug="--debug"
+CMD=("python3" "/app/roprl.py")
+CMD+=("--token" "$token")
+CMD+=("--repository" "$repository")
+CMD+=("--pull-request-id" "$pull_request_id")
+CMD+=("--mode" "$mode")
+
+if [[ -n "$custom_tag" ]]; then
+  CMD+=("--custom-tag" "$custom_tag")
 fi
 
-python3 /app/roprl.py --token "$input_token" --repository "$input_repository" --pull-request-id "$input_pull_request_id" --mode "$input_mode" $debug
+if [[ "$debug" == "true" || "$debug" == "TRUE" || "$debug" == "True" || "$debug" == "1" ]]; then
+  CMD+=("--debug")
+fi
+
+# Execute the command
+"${CMD[@]}"
