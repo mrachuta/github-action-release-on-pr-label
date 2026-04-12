@@ -30,8 +30,8 @@ inputs:
     required: false
     type: string
 outputs:
-  tag:
-    description: "The calculated (or custom) tag. Only available in validate mode."
+  new_tag:
+    description: "Tag to be created."
     type: string
 runs:
   using: 'docker'
@@ -41,5 +41,5 @@ runs:
     - ${{ inputs.repository }}
     - ${{ inputs.pull_request_id }}
     - ${{ inputs.mode }}
-    - ${{ inputs.custom-tag }}
+    - ${{ inputs.custom_tag }}
     - ${{ inputs.debug }}

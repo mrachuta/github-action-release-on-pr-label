@@ -83,13 +83,6 @@ def run():
             summary += f"    You can use `/validate-for-release` command via PR comment to trigger a re-assessment.\n"
 
         pr.add_comment(summary)
-
-        # Set output for GitHub Action
-        github_output = os.environ.get("GITHUB_OUTPUT")
-        if github_output:
-            with open(github_output, "a") as f:
-                f.write(f"tag={release.new_tag if release.new_tag else ''}\n")
-
         logger.info("Comment added to PR.")
 
     elif args.mode == "release":
@@ -110,6 +103,12 @@ def run():
                 logger.warning("PR is not merged. Skipping release.")
             if not pr.release_eligible:
                 logger.warning("PR is not eligible for release. Skipping.")
+
+    # Set output for GitHub Action
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a") as f:
+            f.write(f"new_tag={release.new_tag if release.new_tag else ''}\n")
 
 
 if __name__ == "__main__":
