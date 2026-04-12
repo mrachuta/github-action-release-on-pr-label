@@ -32,7 +32,6 @@ inputs:
 outputs:
   new_tag:
     description: "Tag to be created."
-    type: string
 runs:
   using: 'docker'
   image: 'Dockerfile'
