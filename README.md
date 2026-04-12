@@ -33,6 +33,7 @@ This GitHub Action automates the creation of releases based on pull request labe
   - `validate`: Analyzes the PR, posts a summary comment about release eligibility, and outputs the calculated tag.
   - `release`: Creates a GitHub release/tag if the PR is merged and eligible.
 - **Automated Notes**: Generates release notes automatically via GitHub's API.
+- **Assets**: Ability to attach assets to release.
 
 ## Technologies
 * Python3
@@ -49,9 +50,9 @@ This GitHub Action automates the creation of releases based on pull request labe
 | `repository`      | The full repository name (e.g., `owner/repo`)        | Yes      | N/A     |
 | `pull_request_id` | The ID of the pull request to process                | Yes      | N/A     |
 | `mode`            | Execution mode: `validate` or `release`              | Yes      | N/A     |
-| `debug`           | Enable debug logging via flag `--debug`              | No       | ``      |
 | `custom_tag`      | Custom tag to use in release mode (skips calculation)| No       | ``      |
-
+| `assets`          | Attach additional files to release                   | No       | ``      |
+| `debug`           | Enable debug logging via flag `--debug`              | No       | ``      |
 ### Outputs
 
 | Output            | Description          |
@@ -65,7 +66,7 @@ You can run the script locally if you have Python installed:
 ```bash
 pip install requests=="2.*" pytest=="9.*"
 pytest tests/test_github.py
-python3 release-on-pr-label.py --token YOUR_TOKEN --repository owner/repo --pull-request-id 123 --mode comment
+python3 release-on-pr-label.py --token YOUR_TOKEN --repository owner/repo --pull-request-id 123 --mode validate
 ```
 
 ### Example Workflow
@@ -189,21 +190,18 @@ jobs:
     outputs:
       new_tag: ${{ steps.validate_for_release.outputs.new_tag }}
 
-  do-something-with-tag:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    needs: 
-      - validate-for-release
-    steps:
-      - name: Print info
-        run: "tar -cvf my-app-${{ needs.validate-for-release.outputs.new_tag }}.tar my-app"
-
   create-release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - validate-for-release
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        id: checkout_repository
+      - name: Create package
+        id: create_package
+        run: "tar -cvf my-app-${{ needs.validate-for-release.outputs.new_tag }}.tar my-app"
       - name: Create release
         uses: mrachuta/github-action-release-on-pr-label@master
         id: create_release
@@ -213,6 +211,7 @@ jobs:
           pull_request_id: ${{ github.event.pull_request.number }}
           mode: release
           custom_tag: ${{ needs.validate-for-release.outputs.new_tag }}
+          assets: "my-app-${{ needs.validate-for-release.outputs.new_tag }}.tar"
           debug: ${{ runner.debug }}
 
 ```
