@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from .github_api import GithubPullRequest, GithubRelease
 
 
@@ -20,6 +21,9 @@ def run():
         default="validate",
         help="Execution mode",
     )
+    parser.add_argument(
+        "-c", "--custom-tag", help="Custom tag to use in release mode"
+    )
     parser.add_argument("-d", "--debug", action="store_true", help="Debug mode")
     args = parser.parse_args()
 
@@ -36,18 +40,27 @@ def run():
 
     # 2. Prepare Version
     release = GithubRelease(args.repository, args.token, pr.release_type)
-    release.get_latest_release()
-    version_valid = release.calculate_version()
 
-    if not version_valid:
-        pr.release_eligible = False
-        pr.assessment_results[
-            "versioning"
-        ] = f"Previous release tag `{release.latest_tag}` does not match semantic versioning."
+    if args.custom_tag:
+        logger.info(f"Using custom tag: {args.custom_tag}")
+        release.new_tag = args.custom_tag
+        version_valid = True
+        pr.release_eligible = True
+        pr.assessment_results["versioning"] = f"Using custom tag: `{release.new_tag}`"
     else:
-        pr.assessment_results[
-            "versioning"
-        ] = f"Next tag: `{release.new_tag}` ({pr.release_type})"
+        release.get_latest_release()
+        version_valid = release.calculate_version()
+
+    if not args.custom_tag:
+        if not version_valid:
+            pr.release_eligible = False
+            pr.assessment_results[
+                "versioning"
+            ] = f"Previous release tag `{release.latest_tag}` does not match semantic versioning."
+        else:
+            pr.assessment_results[
+                "versioning"
+            ] = f"Next tag: `{release.new_tag}` ({pr.release_type})"
 
     # 3. Handle Modes
     if args.mode == "validate":
@@ -70,6 +83,13 @@ def run():
             summary += f"    You can use `/validate-for-release` command via PR comment to trigger a re-assessment.\n"
 
         pr.add_comment(summary)
+
+        # Set output for GitHub Action
+        github_output = os.environ.get("GITHUB_OUTPUT")
+        if github_output:
+            with open(github_output, "a") as f:
+                f.write(f"tag={release.new_tag if release.new_tag else ''}\n")
+
         logger.info("Comment added to PR.")
 
     elif args.mode == "release":
