@@ -18,8 +18,8 @@ def run():
         "-m",
         "--mode",
         choices=["validate", "release"],
-        default="validate",
-        help="Execution mode",
+        required=True,
+        help="Execution mode (validate or release)",
     )
     parser.add_argument(
         "-c", "--custom-tag", help="Custom tag to use in release mode"

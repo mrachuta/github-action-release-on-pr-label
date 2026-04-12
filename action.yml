@@ -18,11 +18,11 @@ inputs:
     required: true
     type: number
   mode:
-    description: "Mode that action will be using"
-    required: false
+    description: "Mode that action will be using (validate or release)"
+    required: true
     type: string
   custom_tag:
-    description: "Custom tag to use in release mode (skips calculation)"
+    description: "Custom tag to use in release mode (skips calculation)."
     required: false
     type: string
   debug:
@@ -35,10 +35,4 @@ outputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  args:
-    - ${{ inputs.token }}
-    - ${{ inputs.repository }}
-    - ${{ inputs.pull_request_id }}
-    - ${{ inputs.mode }}
-    - ${{ inputs.custom_tag }}
-    - ${{ inputs.debug }}
+
