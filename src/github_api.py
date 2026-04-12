@@ -2,6 +2,7 @@ import re
 import os
 import requests
 import logging
+import mimetypes
 
 GITHUB_API_URL = "https://api.github.com"
 # TODO: Update API version
@@ -151,5 +152,23 @@ class GithubRelease:
             "generate_release_notes": True,
         }
         response = requests.post(url, headers=self.headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    def upload_asset(self, upload_url, file_path):
+        url = upload_url.split("{")[0]
+        file_name = os.path.basename(file_path)
+        
+        content_type, _ = mimetypes.guess_type(file_path)
+        if not content_type:
+            content_type = "application/octet-stream"
+
+        headers = self.headers.copy()
+        headers["Content-Type"] = content_type
+
+        with open(file_path, "rb") as f:
+            response = requests.post(
+                url, headers=headers, params={"name": file_name}, data=f
+            )
         response.raise_for_status()
         return response.json()

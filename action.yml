@@ -29,6 +29,10 @@ inputs:
     description: "Enable debug logging"
     required: false
     type: string
+  assets:
+    description: "Comma-separated list of files or glob patterns to upload as release assets"
+    required: false
+    type: string
 outputs:
   new_tag:
     description: "Tag to be created."
